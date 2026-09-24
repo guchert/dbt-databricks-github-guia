@@ -36,13 +36,13 @@ Na maioria das vezes, é o **Token ID** (64 caracteres) colado no lugar do **tok
 
 ## Tecnologias
 
-HTML, CSS e JavaScript puros, sem frameworks e sem dependências.
+HTML, CSS e JavaScript puros, sem frameworks e sem dependências, basta abrir o .html em seu navegador.
 
 ## Autor
 
-**Leonardo Guchert**, profissional de TI em transição para análise de dados e analytics engineering.
+**Leonardo Güchert Miranda**, profissional de TI, analista de dados em transição para analytics engineering.
 
-Sugestões e correções são bem-vindas: abra uma *issue* ou um *pull request*.
+Sugestões e correções sempre são bem-vindas: abra uma *issue* ou um *pull request*.
 
 ## Licença
 
