@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Integração dbt Databricks</title>
+<title>BanVic dbt do Fork ao Run</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -248,6 +248,33 @@ footer b{color:var(--muted);font-weight:600}
   .step{padding:14px 12px;gap:12px}
   .ring .pct{font-size:40px}
 }
+
+/* ---------- fork panel extras ---------- */
+pre.code{margin:0;font:500 13px/1.65 var(--mono);color:var(--text);background:rgba(0,0,0,.38);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px;overflow-x:auto;white-space:pre}
+pre.code .k{color:#79c0ff} pre.code .v{color:#ffd9a8} pre.code .c{color:var(--faint)} pre.code .hl{background:rgba(141,250,143,.14);color:#d9ffe0;border-radius:4px;padding:0 3px}
+.code-wrap{position:relative}
+.code-wrap .copy{position:absolute;top:10px;right:10px}
+.sessions{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sess{border:1px solid var(--line-soft);border-radius:16px;padding:16px;background:rgba(8,10,30,.3);display:flex;flex-direction:column;gap:10px;min-width:0}
+.sess h3{margin:0;font:700 16px/1.2 var(--display)}
+.sess .who{font:600 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.sess.ok{border-color:rgba(141,250,143,.3)} .sess.ok .who{color:var(--lime)}
+.sess.bad{border-color:rgba(255,90,60,.35)} .sess.bad .who{color:#ff9d8a}
+.sess.fix{border-color:rgba(255,171,76,.35)} .sess.fix .who{color:var(--amber)}
+.sess p{margin:0;color:var(--muted);font-size:13.5px}
+.sess .line{font:500 12px/1.5 var(--mono);background:rgba(0,0,0,.35);border-radius:8px;padding:8px 10px;overflow-wrap:anywhere;color:var(--text)}
+.sess .line b{color:var(--amber);font-weight:600}
+.sess.bad .line b{color:#ff9d8a} .sess.ok .line b{color:var(--lime)}
+.sessions .span2{grid-column:1/-1}
+.notneeded{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.notneeded span{font:500 12.5px/1 var(--mono);padding:8px 11px;border-radius:9px;border:1px dashed var(--line);color:var(--faint);text-decoration:line-through;text-decoration-color:rgba(255,157,138,.6)}
+@media (max-width: 760px){.sessions{grid-template-columns:1fr}}
+
+/* inline-safe callouts */
+.verify,.warn{display:block;position:relative;padding-left:44px}
+.verify::before,.warn::before{position:absolute;left:12px;top:10px}
+summary{overflow-wrap:anywhere}
+h2 code{font-size:.78em;color:#ffd9a8}
 </style>
 </head>
 <body>
@@ -262,14 +289,14 @@ footer b{color:var(--muted);font-weight:600}
   <!-- HERO -->
   <section class="glass hero">
     <div>
-      <div class="eyebrow"><span class="dot"></span>Checklist de configuração</div>
-      <h1>Integrando <span class="grad">dbt Cloud, Databricks e GitHub</span> do zero</h1>
-      <p class="lede">O passo a passo completo para ligar as três ferramentas: criar as contas, gerar as credenciais, conectar tudo e provar que funciona. Marque cada etapa conforme avança; o progresso fica salvo neste navegador.</p>
+      <div class="eyebrow"><span class="dot"></span>Guia de fork · projeto BanVic</div>
+      <h1>Do fork ao primeiro <span class="grad">dbt run</span> sem erro</h1>
+      <p class="lede">O caminho completo para rodar o projeto <b>techindicium/banvic-dbt</b> a partir do seu próprio fork, com dbt Cloud (Fusion 2.0) e Databricks Free Edition. Inclui os dois erros que aparecem nesse caminho e a correção de cada um. Marque as etapas conforme avança; o progresso fica salvo neste navegador.</p>
       <div class="meta">
         <span class="chip">6 fases</span>
         <span class="chip" id="stepCount">— passos</span>
-        <span class="chip">Databricks Free Edition</span>
-        <span class="chip">dbt Cloud · plano Developer</span>
+        <span class="chip">catálogo dev</span>
+        <span class="chip">dbt Fusion 2.0</span>
       </div>
     </div>
     <div class="ring-card">
@@ -298,32 +325,32 @@ footer b{color:var(--muted);font-weight:600}
   <!-- FLOW -->
   <section class="glass flow" aria-labelledby="flowTitle">
     <div class="sec-head">
-      <h2 id="flowTitle">Como as três peças conversam</h2>
-      <p>O dbt fica no meio: lê o código no GitHub e executa o SQL no Databricks.</p>
+      <h2 id="flowTitle">O que precisa estar amarrado</h2>
+      <p>Três ligações. Se uma falhar, o dbt run não passa.</p>
     </div>
     <div class="nodes">
       <div class="node" style="--c:var(--violet)">
-        <span class="tag">Código</span>
+        <span class="tag">Seu fork</span>
         <h3>GitHub</h3>
-        <p>Guarda os arquivos <code>.sql</code> e <code>.yml</code> do projeto e todo o histórico de versões.</p>
+        <p>Cópia de <code>techindicium/banvic-dbt</code> na sua conta. É o repositório que o dbt lê e onde grava os commits.</p>
       </div>
       <div class="link" style="--a:var(--violet);--b:var(--amber)">
         <div class="wire"></div>
-        <span>app do dbt no GitHub<br>(git: pull · commit · PR)</span>
+        <span>app do dbt no GitHub<br>(repositório = seu fork)</span>
       </div>
       <div class="node" style="--c:var(--amber)">
-        <span class="tag">Orquestração</span>
+        <span class="tag">Projeto</span>
         <h3>dbt Cloud</h3>
-        <p>Onde você escreve, compila, testa e agenda os modelos. Transforma <code>ref()</code> em SQL real.</p>
+        <p>Conexão, credenciais e o <code>dbt_project.yml</code>, que define em qual catálogo tudo é criado.</p>
       </div>
       <div class="link" style="--a:var(--amber);--b:var(--coral)">
         <div class="wire"></div>
-        <span>SQL Warehouse<br>(hostname · HTTP path · token)</span>
+        <span>token dapi · HTTP path<br>USE CATALOG dev</span>
       </div>
       <div class="node" style="--c:var(--coral)">
-        <span class="tag">Dados e execução</span>
+        <span class="tag">Catálogo dev</span>
         <h3>Databricks</h3>
-        <p>Onde os dados moram e onde as consultas rodam. As tabelas criadas pelo dbt aparecem no Catalog.</p>
+        <p>Executa o SQL. As tabelas aparecem em <code>dev → dbt_seu_schema</code>. O <code>hive_metastore</code> está desativado.</p>
       </div>
     </div>
   </section>
@@ -336,76 +363,126 @@ footer b{color:var(--muted);font-weight:600}
     <div class="phases" id="phases"></div>
   </div>
 
-  <!-- MAP + TROUBLESHOOTING -->
-  <div class="two">
-    <section class="glass panel" aria-labelledby="mapTitle">
-      <div class="sec-head"><h2 id="mapTitle">O que vai para onde</h2></div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Informação</th><th>Onde pegar</th><th>Onde colar</th></tr></thead>
-          <tbody>
-            <tr><td>Server hostname</td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>SQL Warehouses → Connection details</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Conexão</td></tr>
-            <tr><td>HTTP path</td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>SQL Warehouses → Connection details</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Conexão</td></tr>
-            <tr><td>Catalog</td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>Menu Catalog (<code>workspace</code>)</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Conexão</td></tr>
-            <tr><td>Token <code>dapi…</code></td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>Settings → Developer → Access tokens</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Credenciais de desenvolvimento</td></tr>
-            <tr><td>Schema</td><td>Você escolhe<br><code>dbt_seunome</code></td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Credenciais de desenvolvimento</td></tr>
-            <tr><td>Repositório</td><td><span class="pill" style="--c:var(--violet)">GitHub</span><br>New repository</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Etapa Repository</td></tr>
-          </tbody>
-        </table>
+  <!-- WHY PRE-HOOK -->
+  <section class="glass panel" aria-labelledby="whyTitle">
+    <div class="sec-head">
+      <h2 id="whyTitle">Por que o <code>pre-hook</code> resolve</h2>
+      <p>O mesmo SQL funcionou no SQL Editor e falhou no dbt. A diferença estava na sessão.</p>
+    </div>
+    <div class="sessions">
+      <div class="sess ok">
+        <span class="who">✓ SQL Editor do Databricks</span>
+        <h3>Sessão abre no catálogo dev</h3>
+        <div class="line">sessão: <b>dev</b>.dbt_lmiranda<br>CREATE OR REPLACE TABLE dev.dbt_lmiranda.teste …</div>
+        <p>Funciona. Prova que o catálogo e o schema estão bons.</p>
       </div>
-      <h2 style="margin-top:26px;font-size:20px">Rotina depois de integrado</h2>
-      <div class="routine" aria-label="Rotina de trabalho">
-        <span class="r">criar branch</span><span class="arr">→</span>
-        <span class="r">editar modelo</span><span class="arr">→</span>
-        <span class="r">dbt build</span><span class="arr">→</span>
+      <div class="sess bad">
+        <span class="who">✕ dbt sem ajuste</span>
+        <h3>Sessão abre no hive_metastore</h3>
+        <div class="line">sessão: <b>hive_metastore</b><br>create or replace table `dev`.`dbt_lmiranda`.`my_first_dbt_model` …</div>
+        <p>Mesmo com o catálogo no nome da tabela, o Databricks recusa, porque a sessão aponta para o catálogo desativado.</p>
+      </div>
+      <div class="sess fix span2">
+        <span class="who">→ Correção no dbt_project.yml</span>
+        <h3>Trocar o catálogo da sessão antes de cada modelo</h3>
+        <div class="line"><b>+pre-hook: "USE CATALOG dev"</b> roda antes do create table. A sessão passa a apontar para dev e o comando é aceito.</div>
+        <p>O <code>+database: dev</code> coloca o catálogo no nome das tabelas; o <code>+pre-hook</code> acerta a sessão. Os dois juntos fazem o <code>dbt run</code> passar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- YML + TROUBLESHOOTING -->
+  <div class="two">
+    <section class="glass panel" aria-labelledby="ymlTitle">
+      <div class="sec-head"><h2 id="ymlTitle">O final do <code>dbt_project.yml</code></h2></div>
+      <div class="code-wrap">
+        <button class="copy" type="button" data-copy-block="yml">copiar</button>
+<pre class="code" id="yml"><span class="k">models:</span>
+  <span class="k">my_new_project:</span>
+    <span class="hl">+database: dev</span>
+    <span class="hl">+pre-hook: "USE CATALOG dev"</span>
+
+<span class="k">seeds:</span>
+  <span class="k">my_new_project:</span>
+    <span class="hl">+database: dev</span>
+    <span class="hl">+pre-hook: "USE CATALOG dev"</span>
+    <span class="k">banvic:</span>
+      <span class="k">+schema:</span> <span class="v">erp_banvic</span>
+      <span class="k">+enabled:</span> <span class="v">false</span></pre>
+      </div>
+      <p class="hint" style="margin:12px 0 0">No projeto original o bloco <code>models:</code> vem comentado com <code>#</code>. Tire o <code>#</code>, mantenha o recuo de 2 e 4 espaços e use o mesmo nome que aparece em <code>name:</code> no topo do arquivo.</p>
+
+      <h2 style="margin-top:26px;font-size:20px">O que não foi necessário</h2>
+      <p class="hint" style="margin:6px 0 0">Tentativas feitas durante o diagnóstico que não resolveram o problema:</p>
+      <div class="notneeded">
+        <span>trocar o catálogo para workspace</span>
+        <span>mudar o default catalog do Databricks</span>
+        <span>reiniciar o Studio</span>
+        <span>dbt restart studio</span>
+      </div>
+
+      <h2 style="margin-top:26px;font-size:20px">Ciclo de trabalho</h2>
+      <div class="routine" aria-label="Ciclo de trabalho">
+        <span class="r">branch</span><span class="arr">→</span>
+        <span class="r">editar</span><span class="arr">→</span>
+        <span class="r">dbt run</span><span class="arr">→</span>
         <span class="r">conferir no Catalog</span><span class="arr">→</span>
         <span class="r">commit</span><span class="arr">→</span>
-        <span class="r">pull request</span><span class="arr">→</span>
-        <span class="r">merge na main</span>
+        <span class="r">PR no seu fork</span><span class="arr">→</span>
+        <span class="r">merge</span><span class="arr">→</span>
+        <span class="r">pull na main</span>
       </div>
     </section>
 
     <section class="glass panel" aria-labelledby="faqTitle">
-      <div class="sec-head"><h2 id="faqTitle">Quando algo dá errado</h2></div>
+      <div class="sec-head"><h2 id="faqTitle">Os erros deste caminho</h2></div>
       <div class="faq">
         <details open>
-          <summary><span class="sym">401</span>Test connection falha com “Unauthorized”</summary>
+          <summary><span class="sym">401</span>dbt debug falha com “Unauthorized”</summary>
           <div class="ans">
             <div class="err">Credential was not sent or was of an unsupported type for this API … HTTP 401 Unauthorized</div>
-            <p>O dbt chegou ao warehouse, mas o token foi recusado. Quase sempre é um destes: campo Token vazio, token copiado pela metade, ou o <b>Token ID</b> colado no lugar do token.</p>
-            <p>Solução: gere um novo token no Databricks, copie o valor que começa com <code>dapi</code> e cole de novo em Credenciais.</p>
+            <p><b>Causa:</b> o <b>Token ID</b> (64 caracteres) foi colado no lugar do token.</p>
+            <p><b>Correção:</b> gere um novo token no Databricks e cole o valor que começa com <code>dapi</code>.</p>
+          </div>
+        </details>
+        <details open>
+          <summary><span class="sym">hive</span>dbt run falha com UC_HIVE_METASTORE_DISABLED_EXCEPTION</summary>
+          <div class="ans">
+            <div class="err">Failed to create schema 'dbt_lmiranda' in database 'hive_metastore' … [UC_HIVE_METASTORE_DISABLED_EXCEPTION] The operation attempted to use Hive Metastore, which is disabled…</div>
+            <p><b>Causa:</b> a sessão do dbt abre no <code>hive_metastore</code>, que vem desativado no Free Edition.</p>
+            <p><b>Correção:</b> <code>+database: dev</code> e <code>+pre-hook: "USE CATALOG dev"</code> no <code>dbt_project.yml</code> (passo 4.2).</p>
           </div>
         </details>
         <details>
-          <summary><span class="sym">401</span>Funcionava e parou depois de algumas semanas</summary>
-          <div class="ans"><p>O token expirou (ele tem a validade escolhida na criação). Gere outro e troque apenas o campo Token nas credenciais. O restante continua igual.</p></div>
+          <summary><span class="sym">hive</span>O schema passou, mas a tabela falhou</summary>
+          <div class="ans"><p>Sinal de que só o <code>+database</code> foi aplicado. Falta o <code>+pre-hook</code>. Ative <b>Debug logs</b> no painel do erro: se o comando mostrar <code>`dev`.`schema`.`tabela`</code> e mesmo assim falhar, o problema é a sessão.</p></div>
         </details>
         <details>
-          <summary><span class="sym">git</span>A opção GitHub não aparece na etapa Repository</summary>
-          <div class="ans"><p>A conta do dbt ainda não está ligada ao GitHub. Vá em <span class="path">Account settings → <b>Integrations</b> → GitHub → Link</span>, autorize e volte ao projeto.</p></div>
+          <summary><span class="sym">seeds</span>O erro voltou ao ativar os seeds do BanVic</summary>
+          <div class="ans"><p>Os seeds precisam do mesmo ajuste. Confira se o bloco <code>seeds:</code> também tem <code>+database: dev</code> e <code>+pre-hook: "USE CATALOG dev"</code> antes de mudar <code>+enabled</code> para <code>true</code>.</p></div>
         </details>
         <details>
-          <summary><span class="sym">git</span>O repositório não aparece na lista</summary>
-          <div class="ans"><p>O app do dbt foi instalado com acesso só a alguns repositórios. No GitHub, abra <span class="path">Settings → Applications → <b>dbt Cloud</b> → Configure</span> e inclua o repositório.</p></div>
+          <summary><span class="sym">fork</span>O pull request foi para o repositório da Indicium</summary>
+          <div class="ans"><p>Em forks, o GitHub sugere o repositório original como destino. Na tela do PR, troque <b>base repository</b> para <code>seu-usuario/banvic-dbt</code> antes de criar.</p></div>
         </details>
         <details>
-          <summary><span class="sym">schema</span>As tabelas saem com o nome de outra pessoa</summary>
-          <div class="ans"><p>O schema foi copiado de um tutorial (ex.: <code>dbt_lmiranda</code>). Troque para o seu em Credenciais de desenvolvimento e rode de novo.</p></div>
+          <summary><span class="sym">ui</span>O campo Catalog parecia preenchido, mas estava vazio</summary>
+          <div class="ans"><p>Texto em <b>cinza</b> dentro do campo é só uma dica. Clique, apague e digite <code>dev</code>: o texto precisa ficar branco antes de salvar.</p></div>
         </details>
         <details>
-          <summary><span class="sym">catalog</span>Erro de catálogo ou tabela não encontrada</summary>
-          <div class="ans"><p>Com Unity Catalog, informe o <b>catalog</b> na conexão. No Free Edition o padrão é <code>workspace</code>; confira o nome exato no menu Catalog.</p></div>
+          <summary><span class="sym">schema</span>De onde veio o schema dbt_lmiranda?</summary>
+          <div class="ans"><p>O dbt gera o schema a partir do seu nome: inicial do primeiro nome + último sobrenome. Não é erro; pode manter ou trocar nas credenciais.</p></div>
         </details>
         <details>
-          <summary><span class="sym">lento</span>A primeira execução demora</summary>
-          <div class="ans"><p>O SQL Warehouse desliga sozinho quando fica ocioso. A primeira consulta espera ele ligar; as seguintes são rápidas.</p></div>
+          <summary><span class="sym">cmd</span>“dbt restart studio” falhou</summary>
+          <div class="ans"><p>Não é um comando do dbt. Reiniciar o Studio é uma opção da interface, em <b>Status</b> no rodapé. Neste caminho, não foi necessário.</p></div>
         </details>
       </div>
     </section>
   </div>
 
   <footer>
-    <span>Guia de referência · <b>Leonardo Guchert</b> · github.com/guchert</span>
+    <span>Guia de referência · <b>Leonardo Güchert</b> · github.com/guchert</span>
     <span>Nunca publique o valor do seu token <code>dapi…</code>.</span>
   </footer>
 </main>
@@ -417,62 +494,69 @@ footer b{color:var(--muted);font-weight:600}
     `<div class="field"><div style="min-width:0"><div class="fl">${label}</div><div class="fv">${value}</div></div>${copyable?`<button class="copy" type="button" data-copy="${value.replace(/<[^>]+>/g,'')}">copiar</button>`:''}</div>`;
 
   const PHASES = [
-    { id:'github', k:'Fase 1 · GitHub', name:'GitHub', color:'var(--violet)',
-      intro:'O repositório é onde o código do projeto dbt vai morar. Ele precisa existir antes de configurar o dbt.',
+    { id:'github', k:'Fase 1 · GitHub', name:'Fork no GitHub', color:'var(--violet)',
+      intro:'Você trabalha numa cópia sua do projeto da Indicium. O original fica intacto.',
       steps:[
-        { t:'Criar a conta no GitHub', b:`<p>Acesse <span class="path">github.com → <b>Sign up</b></span>. Se já tiver conta, apenas faça login.</p>` },
-        { t:'Criar um repositório vazio', b:`<p><span class="path">+ → <b>New repository</b></span>. Escolha um nome, público ou privado, e deixe <b>desmarcados</b> README, .gitignore e licença. O dbt preenche a estrutura depois.</p>
-          <div class="fields">${f('Nome sugerido','dbt-banvic')}</div>` }
+        { t:'Fazer o fork do projeto da Indicium', b:`<p>Acesse o repositório original e clique em <span class="path"><b>Fork</b></span>, no canto superior direito.</p>
+          <div class="fields">${f('Repositório original','github.com/techindicium/banvic-dbt')}</div>` },
+        { t:'Criar o fork na sua conta', b:`<p>Owner: sua conta. Pode manter o nome <code>banvic-dbt</code>. Deixe marcado <b>Copy the main branch only</b> e clique em <b>Create fork</b>.</p>
+          <div class="verify">A página do repositório mostra “forked from techindicium/banvic-dbt”.</div>` }
       ]},
     { id:'databricks', k:'Fase 2 · Databricks', name:'Databricks', color:'var(--coral)',
-      intro:'Aqui você cria o ambiente onde os dados ficam e junta as quatro informações que o dbt vai pedir.',
+      intro:'Prepare o catálogo e junte as informações que o dbt vai pedir.',
       steps:[
-        { t:'Criar a conta e entrar no workspace', b:`<p>Para estudo, use o <b>Databricks Free Edition</b> (databricks.com → Free Edition). Depois do cadastro, faça login no workspace.</p>` },
-        { t:'Confirmar o SQL Warehouse', b:`<p>Menu <span class="path"><b>SQL Warehouses</b></span>. O Free Edition já traz o <i>Serverless Starter Warehouse</i>. É ele que executa as consultas enviadas pelo dbt.</p>` },
-        { t:'Copiar os dados de conexão', b:`<p>Clique no warehouse → aba <span class="path"><b>Connection details</b></span> e anote dois valores:</p>
+        { t:'Criar a conta no Free Edition', b:`<p>Cadastre-se no <b>Databricks Free Edition</b> e entre no workspace.</p>` },
+        { t:'Preparar o catálogo dev', b:`<p>Menu <span class="path"><b>Catalog</b></span>. Se não existir um catálogo <code>dev</code>: <span class="path">+ → <b>Create catalog</b></span> → nome <code>dev</code> → Create.</p>
+          <div class="fields">${f('Catálogo','dev')}</div>
+          <div class="warn">O catálogo <code>hive_metastore</code> vem desativado. Nada do projeto deve ir para ele.</div>` },
+        { t:'Copiar hostname e HTTP path', b:`<p><span class="path">Compute → SQL warehouses → Serverless Starter Warehouse → <b>Connection details</b></span>.</p>
           <div class="fields">${f('Server hostname','dbc-xxxxxxxx-xxxx.cloud.databricks.com',false)}${f('HTTP path','/sql/1.0/warehouses/xxxxxxxxxxxxxxxx',false)}</div>` },
-        { t:'Conferir o nome do catálogo', b:`<p>Menu <span class="path"><b>Catalog</b></span>. No Free Edition o catálogo padrão se chama:</p><div class="fields">${f('Catalog','workspace')}</div>` },
-        { t:'Gerar o token de acesso', b:`<p><span class="path">Avatar → Settings → <b>Developer</b> → Access tokens → Manage → <b>Generate new token</b></span>. Dê um nome (ex.: <code>dbt-cloud</code>) e uma validade (ex.: 90 dias).</p>
+        { t:'Gerar o token de acesso', b:`<p><span class="path">Avatar → Settings → <b>Developer</b> → Access tokens → <b>Generate new token</b></span>.</p>
           <div class="anatomy">
             <div class="tok good"><span class="fl">✓ Token · é este</span><span class="fv"><em>dapi</em>a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6</span><small>Começa com dapi. Aparece uma única vez.</small></div>
-            <div class="tok bad"><span class="fl">✕ Token ID · não serve</span><span class="fv">7e1c09ab4f2d…9a03be51c7d8…e4f10</span><small>64 caracteres, só identifica o token na lista.</small></div>
-          </div>
-          <div class="warn">Copie o valor antes de fechar a janela. Se perder, gere outro; não há como recuperar.</div>` }
+            <div class="tok bad"><span class="fl">✕ Token ID · causa o 401</span><span class="fv">7e1c09ab4f2d…9a03be51c7d8…e4f10</span><small>64 caracteres, só identifica o token na lista.</small></div>
+          </div>` }
       ]},
     { id:'dbt', k:'Fase 3 · dbt Cloud', name:'dbt Cloud', color:'var(--amber)',
-      intro:'Com as informações do Databricks em mãos, crie o projeto no dbt e aponte para o warehouse.',
+      intro:'Crie o projeto, aponte para o warehouse e ligue ao seu fork.',
       steps:[
-        { t:'Criar a conta no dbt Cloud', b:`<p>Acesse <span class="path">getdbt.com → <b>Sign up</b></span>. O plano <b>Developer</b> é gratuito para 1 usuário.</p>` },
-        { t:'Criar um projeto', b:`<p>Dê um nome ao projeto e siga o assistente de configuração. Ele pede conexão, credenciais e repositório, nessa ordem.</p>` },
-        { t:'Configurar a conexão com o Databricks', b:`<p>Escolha <b>Databricks</b> e preencha com o que você anotou na fase 2:</p>
-          <div class="fields">${f('Server hostname','do passo 2.3',false)}${f('HTTP path','do passo 2.3',false)}${f('Catalog','workspace')}</div>` },
-        { t:'Preencher as credenciais de desenvolvimento', b:`<div class="fields">${f('Auth method','Token',false)}${f('Token','dapi…',false)}${f('Schema','dbt_seunome',false)}${f('Threads','4')}</div>
-          <p>O schema é onde as suas tabelas de teste serão criadas. Use um nome seu, como <code>dbt_lguchert</code>.</p>` },
-        { t:'Testar a conexão', b:`<p>Clique em <b>Test connection</b>.</p><div class="verify">Mensagem de sucesso: dbt e Databricks estão conversando.</div>` }
+        { t:'Criar a conta e o projeto', b:`<p>Em <span class="path">getdbt.com</span>, crie a conta e um projeto novo. O assistente pede conexão, credenciais e repositório.</p>` },
+        { t:'Configurar a conexão com o Databricks', b:`<div class="fields">${f('Server hostname','do passo 2.3',false)}${f('HTTP path','do passo 2.3',false)}${f('Catalog','dev')}</div>
+          <div class="warn">Digite <code>dev</code> de verdade. Texto em cinza no campo é só uma dica e deixa o campo vazio.</div>` },
+        { t:'Preencher as credenciais de desenvolvimento', b:`<div class="fields">${f('Auth method','Token',false)}${f('Token','dapi…',false)}${f('Schema','dbt_seunome',false)}</div>
+          <p>O dbt sugere um schema a partir do seu nome (ex.: <code>dbt_lmiranda</code>). Pode manter.</p>
+          <div class="verify">Test connection mostra sucesso.</div>` },
+        { t:'Ligar o repositório ao seu fork', b:`<p>Etapa <b>Repository</b> → <b>GitHub</b> → autorize o app do dbt → selecione <b>seu-usuario/banvic-dbt</b>.</p>
+          <div class="warn">Escolha o seu fork, não o repositório da techindicium.</div>` }
       ]},
-    { id:'git', k:'Fase 4 · dbt ↔ GitHub', name:'Ligar dbt e GitHub', color:'var(--teal)',
-      intro:'O dbt precisa de permissão para ler e escrever no seu repositório. Isso é feito por um app instalado no GitHub.',
+    { id:'yml', k:'Fase 4 · Projeto', name:'Ajustar o projeto', color:'var(--teal)',
+      intro:'O ajuste que faz o dbt usar o catálogo dev, na sessão e nas tabelas.',
       steps:[
-        { t:'Escolher GitHub na etapa Repository', b:`<p>No assistente do projeto, em <b>Setup repository</b>, selecione <b>GitHub</b>.</p>` },
-        { t:'Instalar o app do dbt Cloud no GitHub', b:`<p>Você será levado ao GitHub. Autorize e instale o app na sua conta, dando acesso a <b>todos</b> os repositórios ou só ao criado na fase 1.</p>` },
-        { t:'Selecionar o repositório', b:`<p>De volta ao dbt Cloud, escolha o repositório na lista.</p><div class="warn">Se GitHub não aparecer: <span class="path">Account settings → <b>Integrations</b> → GitHub → Link</span>, depois volte ao projeto.</div>` }
+        { t:'Criar uma branch no Studio', b:`<p>Abra o <b>Studio</b> → <b>Create branch</b>. O dbt não deixa editar a <code>main</code>.</p>
+          <div class="fields">${f('Nome sugerido','feature/config-catalogo')}</div>` },
+        { t:'Editar o dbt_project.yml', b:`<p>Confira o valor de <code>name:</code> no topo (no projeto da Indicium é <code>my_new_project</code>). No final do arquivo, <b>tire o # do bloco models:</b> e acrescente as linhas do catálogo em models e seeds.</p>
+          <div class="fields">${f('Em models e seeds','+database: dev',false)}${f('Em models e seeds','+pre-hook: "USE CATALOG dev"',false)}</div>
+          <p>O arquivo completo está na seção <b>O final do dbt_project.yml</b>, mais abaixo.</p>` },
+        { t:'Salvar o arquivo', b:`<p><b>Ctrl + S</b>. A bolinha ao lado do nome do arquivo some. Não precisa fazer commit para testar: o dbt run usa o arquivo salvo.</p>` }
       ]},
-    { id:'check', k:'Fase 5 · Validação', name:'Validar', color:'var(--lime)',
-      intro:'Três testes rápidos provam que cada ligação funciona. Se os três passarem, a integração está completa.',
+    { id:'check', k:'Fase 5 · Validação', name:'Testar', color:'var(--lime)',
+      intro:'Rode, confira no Databricks e só então salve no GitHub.',
       steps:[
-        { t:'Inicializar o projeto e enviar ao GitHub', b:`<p>Abra o <b>Studio IDE</b> (menu Develop) → <b>Initialize dbt project</b> → <b>Commit and sync</b>.</p><div class="verify">No GitHub, os arquivos <code>dbt_project.yml</code> e <code>models/</code> aparecem no repositório.</div>` },
-        { t:'Rodar o dbt debug', b:`<div class="fields">${f('Comando','dbt debug')}</div><div class="verify">A saída termina com “All checks passed”.</div>` },
-        { t:'Rodar o dbt run', b:`<div class="fields">${f('Comando','dbt run')}</div><p>O projeto inicial vem com modelos de exemplo.</p><div class="verify">No Databricks, em <span class="path">Catalog → workspace → <b>dbt_seunome</b></span>, as tabelas de exemplo aparecem.</div>` }
+        { t:'Rodar o dbt debug', b:`<div class="fields">${f('Comando','dbt debug')}</div><div class="verify">A saída termina sem erro de conexão.</div>` },
+        { t:'Rodar o dbt run', b:`<div class="fields">${f('Comando','dbt run')}</div><div class="verify">my_first_dbt_model e my_second_dbt_model terminam com sucesso.</div>` },
+        { t:'Conferir no Catalog', b:`<p>No Databricks: <span class="path">Catalog → <b>dev</b> → dbt_seunome</span>.</p><div class="verify">Aparecem a tabela my_first_dbt_model e a view my_second_dbt_model.</div>` }
       ]},
-    { id:'prod', k:'Fase 6 · Produção', name:'Produção', color:'var(--sky)', optional:true,
-      intro:'Separa o ambiente oficial do seu ambiente de testes. Faça quando o projeto estiver maduro.',
+    { id:'git', k:'Fase 6 · GitHub', name:'Salvar no fork', color:'var(--sky)',
+      intro:'Leve a correção para a main do seu fork.',
       steps:[
-        { t:'Criar o ambiente de produção', b:`<p><span class="path">Deploy → <b>Environments</b> → Create</span>, tipo <b>Production</b>, com schema e token próprios.</p><div class="fields">${f('Schema sugerido','analytics')}</div>` },
-        { t:'Criar um job', b:`<p><span class="path">Deploy → <b>Jobs</b> → Create job</span> apontando para a branch <code>main</code>, rodando o comando abaixo manualmente ou com agendamento.</p><div class="fields">${f('Comando','dbt build')}</div>` }
+        { t:'Commit and sync', b:`<div class="fields">${f('Mensagem','Configura catálogo dev e pre-hook USE CATALOG')}</div>` },
+        { t:'Abrir o pull request no seu fork', b:`<p>Clique em <b>Create a pull request on GitHub</b>.</p>
+          <div class="warn">Em forks, o GitHub sugere o repositório da Indicium como destino. Troque <b>base repository</b> para <code>seu-usuario/banvic-dbt</code>.</div>` },
+        { t:'Merge e pull na main', b:`<p><b>Merge pull request</b> → <b>Confirm merge</b>. No Studio: <span class="path">Change branch → <b>main</b> → Pull</span>.</p><div class="verify">O dbt_project.yml da main mostra o bloco models com o catálogo dev.</div>` }
       ]}
   ];
 
-  const KEY = 'dbt-integration-progress-v1';
+  const KEY = 'dbt-banvic-fork-progress-v1';
   let state = {};
   try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ state = {}; }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} };
@@ -535,7 +619,14 @@ footer b{color:var(--muted);font-weight:600}
     document.getElementById('pct').textContent = pct+'%';
     document.getElementById('pctLbl').textContent = `${done} de ${total} concluídos`;
     const rb=document.getElementById('ringBar'); rb.style.strokeDashoffset = C*(1-done/total); rb.style.opacity = done ? 1 : 0;
-    document.getElementById('nextBtn').textContent = done===total ? 'Tudo integrado ✓' : 'Ir para o próximo passo';
+    document.querySelector('[data-copy-block]').addEventListener('click', e => {
+    const b = e.currentTarget, pre = document.getElementById(b.dataset.copyBlock);
+    const done = t => { b.textContent = t; setTimeout(()=>{ b.textContent='copiar'; }, 1400); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); done('selecionado'); };
+    try { navigator.clipboard.writeText(pre.innerText).then(()=>done('copiado'), fallback); } catch(err){ fallback(); }
+  });
+
+  document.getElementById('nextBtn').textContent = done===total ? 'Tudo integrado ✓' : 'Ir para o próximo passo';
   }
 
   phasesEl.addEventListener('change', e => {
@@ -547,7 +638,7 @@ footer b{color:var(--muted);font-weight:600}
   });
 
   phasesEl.addEventListener('click', e => {
-    const b = e.target.closest('.copy'); if (!b) return;
+    const b = e.target.closest('.copy'); if (!b || b.dataset.copyBlock) return;
     const txt = b.dataset.copy;
     const ok = () => { b.textContent = 'copiado'; b.classList.add('ok'); setTimeout(()=>{ b.textContent='copiar'; b.classList.remove('ok'); }, 1400); };
     const fallback = () => {
