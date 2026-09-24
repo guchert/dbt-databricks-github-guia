@@ -2,7 +2,7 @@
 
 Painel interativo com o passo a passo completo para integrar **dbt Cloud**, **Databricks** e **GitHub** do zero, até o primeiro `dbt run` funcionando.
 
-🔗 **Acesse o painel:** https://guchert.github.io/dbt-databricks-github-guia/
+🔗 **Acesse o painel:** baixe o arquivo index.html e abra em qualquer navegador.
 
 ![Prévia do painel](preview.png)
 
