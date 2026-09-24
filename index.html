@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Integração dbt Databricks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --ink:#0a0d1f;
+  --ink-2:#11163a;
+  --text:#f3f4ff;
+  --muted:#b4b8dc;
+  --faint:#7f84ad;
+  --glass:rgba(255,255,255,.075);
+  --glass-hi:rgba(255,255,255,.16);
+  --line:rgba(255,255,255,.16);
+  --line-soft:rgba(255,255,255,.08);
+  --coral:#ff5a3c;
+  --amber:#ffab4c;
+  --teal:#2fe0cb;
+  --violet:#9b7bff;
+  --lime:#8dfa8f;
+  --sky:#6fb6ff;
+  --radius:22px;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--ink);overflow-x:clip}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font:15px/1.6 var(--body);
+  min-height:100%;
+  overflow-x:hidden;
+}
+/* ---------- luminous backdrop ---------- */
+.sky{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:
+    radial-gradient(1200px 700px at 110% -10%, #2a1860 0%, transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, #0f3350 0%, transparent 60%),
+    linear-gradient(180deg,#0b0f26 0%, #0a0d1f 100%);
+}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.75;mix-blend-mode:screen;will-change:transform}
+.orb.o1{width:520px;height:520px;left:-120px;top:-80px;background:radial-gradient(circle at 35% 35%, #ff7a4d, #ff3d6e 45%, transparent 70%);animation:drift1 26s ease-in-out infinite alternate}
+.orb.o2{width:600px;height:600px;right:-160px;top:22%;background:radial-gradient(circle at 50% 50%, #7b5cff, #3b2bd9 50%, transparent 72%);animation:drift2 32s ease-in-out infinite alternate}
+.orb.o3{width:460px;height:460px;left:18%;bottom:-160px;background:radial-gradient(circle at 50% 50%, #22e3c7, #0a8fb5 50%, transparent 72%);animation:drift3 28s ease-in-out infinite alternate;opacity:.6}
+.orb.o4{width:300px;height:300px;right:24%;top:-60px;background:radial-gradient(circle, #ffc36b, transparent 70%);animation:drift1 22s ease-in-out infinite alternate-reverse;opacity:.45}
+.grid-lines{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+}
+@keyframes drift1{to{transform:translate(120px,90px) scale(1.12)}}
+@keyframes drift2{to{transform:translate(-140px,60px) scale(.92)}}
+@keyframes drift3{to{transform:translate(100px,-80px) scale(1.15)}}
+@media (prefers-reduced-motion: reduce){.orb{animation:none}*{transition:none!important}}
+
+/* ---------- layout ---------- */
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:48px 72px;display:flex;flex-direction:column;gap:28px}
+
+.glass{
+  background:linear-gradient(140deg, rgba(255,255,255,.13), rgba(255,255,255,.035) 60%), rgba(12,14,42,.42);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -1px 0 rgba(255,255,255,.04),
+    0 24px 70px rgba(3,4,20,.45);
+  backdrop-filter:blur(22px) saturate(160%);
+  -webkit-backdrop-filter:blur(22px) saturate(160%);
+  position:relative;
+}
+.glass::before{ /* specular sheen */
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(115deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 28%);
+  mix-blend-mode:overlay;
+}
+
+/* ---------- hero ---------- */
+.hero{display:grid;grid-template-columns:1.35fr 1fr;gap:28px;padding:clamp(24px,4vw,44px);align-items:center}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:10px}
+.eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
+h1{font:800 clamp(34px,5.4vw,62px)/1.02 var(--display);letter-spacing:-.025em;margin:16px 0 14px;text-wrap:balance}
+h1 .grad{background:linear-gradient(92deg,var(--amber),var(--coral) 40%,var(--violet) 75%,var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--muted);font-size:17px;max-width:56ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.chip{font:500 12.5px/1 var(--mono);padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--muted)}
+
+.ring-card{display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px}
+.ring{position:relative;width:min(220px,60vw);aspect-ratio:1;max-width:100%}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .track{fill:none;stroke:rgba(255,255,255,.1);stroke-width:12}
+.ring .bar{fill:none;stroke:url(#ringGrad);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 10px rgba(255,120,80,.55))}
+.ring .center{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .pct{font:800 48px/1 var(--display);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ring .lbl{font:500 12px/1.3 var(--mono);color:var(--faint);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+.ring-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.btn{font:600 13px/1 var(--body);padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--text);cursor:pointer;transition:background .2s,border-color .2s,transform .15s}
+.btn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible,.step input:focus-visible + .box,.navlink:focus-visible,.copy:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+.btn.danger{border-color:rgba(255,90,60,.5);color:#ffb3a3}
+.hint{font-size:12.5px;color:var(--faint)}
+
+/* ---------- flow diagram ---------- */
+.flow{padding:clamp(20px,3vw,32px)}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+h2{font:700 clamp(22px,2.6vw,28px)/1.15 var(--display);letter-spacing:-.015em;margin:0;text-wrap:balance}
+.sec-head p{margin:0;color:var(--faint);font-size:14px}
+.nodes{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:stretch;gap:0}
+.node{border:1px solid var(--line);border-radius:18px;padding:18px;background:rgba(255,255,255,.05);display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.node::after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;right:-60px;top:-70px;filter:blur(30px);opacity:.55;background:var(--c)}
+.node .tag{font:600 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+.node h3{font:700 20px/1.1 var(--display);margin:0}
+.node p{margin:0;color:var(--muted);font-size:13.5px}
+.link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0 10px;min-width:120px}
+.link .wire{position:relative;width:100%;height:2px;background:linear-gradient(90deg,var(--a),var(--b));border-radius:2px;overflow:hidden}
+.link .wire::after{content:"";position:absolute;top:-2px;left:-30%;width:30%;height:6px;background:linear-gradient(90deg,transparent,#fff,transparent);filter:blur(1px);animation:pulse 2.6s linear infinite}
+@keyframes pulse{to{left:110%}}
+@media (prefers-reduced-motion: reduce){.link .wire::after{display:none}}
+.link span{font:500 11.5px/1.3 var(--mono);color:var(--muted);text-align:center;white-space:nowrap}
+
+/* ---------- main grid ---------- */
+.main{display:grid;grid-template-columns:260px 1fr;gap:28px;align-items:start}
+.nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);padding:18px;display:flex;flex-direction:column;gap:6px}
+.nav .title{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:4px 8px 10px}
+.navlink{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px 8px;border-radius:12px;color:var(--text);text-decoration:none;transition:background .2s}
+.navlink:hover{background:rgba(255,255,255,.07)}
+.navlink .n{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font:700 13px/1 var(--mono);color:var(--ink);background:var(--c);box-shadow:0 0 16px color-mix(in srgb, var(--c) 60%, transparent)}
+.navlink .t{font-weight:600;font-size:14px;line-height:1.25}
+.navlink .c{font:500 12px/1 var(--mono);color:var(--faint);font-variant-numeric:tabular-nums}
+.navlink.done .c{color:var(--lime)}
+
+.phases{display:flex;flex-direction:column;gap:22px}
+.phase{padding:clamp(20px,3vw,30px);scroll-margin-top:24px}
+.phase-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:18px}
+.phase-num{flex:none;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font:800 22px/1 var(--display);color:var(--ink);background:linear-gradient(145deg,#fff 0%, var(--c) 55%);box-shadow:0 10px 30px color-mix(in srgb, var(--c) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.7)}
+.phase-head .k{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin-bottom:6px}
+.phase-head p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:62ch}
+.pbar{height:4px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin:0 0 16px}
+.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--c),#fff);border-radius:4px;transition:width .6s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 12px var(--c)}
+.opt{font:600 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:5px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint);vertical-align:middle;margin-left:8px}
+
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.step{display:grid;grid-template-columns:auto 1fr;gap:14px;padding:16px;border-radius:16px;border:1px solid var(--line-soft);background:rgba(8,10,30,.28);transition:border-color .25s, background .25s}
+.step>div{min-width:0}
+.step:hover{border-color:var(--line)}
+.step.is-done{background:rgba(141,250,143,.05);border-color:rgba(141,250,143,.22)}
+.step label.check{position:relative;cursor:pointer;display:block;width:30px;height:30px;margin-top:1px}
+.step input{position:absolute;opacity:0;width:30px;height:30px;margin:0;cursor:pointer}
+.step .box{width:30px;height:30px;border-radius:10px;border:1.5px solid rgba(255,255,255,.3);display:grid;place-items:center;font:700 12px/1 var(--mono);color:var(--muted);background:rgba(255,255,255,.04);transition:all .25s}
+.step .box svg{display:none;width:16px;height:16px}
+.step input:checked + .box{background:var(--lime);border-color:var(--lime);color:var(--ink);box-shadow:0 0 18px rgba(141,250,143,.55)}
+.step input:checked + .box svg{display:block}
+.step input:checked + .box b{display:none}
+.step h4{font:700 16px/1.3 var(--body);margin:3px 0 6px}
+.step.is-done h4{color:#d9ffe0}
+.step .body{color:var(--muted);font-size:14.5px;display:flex;flex-direction:column;gap:10px}
+.step .body p{margin:0;max-width:68ch}
+.path{font:500 12.5px/1.5 var(--mono);color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line-soft);padding:2px 7px;border-radius:7px;white-space:normal}
+.path b{color:var(--amber);font-weight:600}
+code{font:500 13px/1.5 var(--mono);color:#ffd9a8;overflow-wrap:anywhere}
+
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:8px}
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.25);border:1px solid var(--line-soft);min-width:0}
+.field .fl{font:600 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.field .fv{font:500 13px/1.3 var(--mono);color:var(--text);overflow-wrap:anywhere}
+.copy{flex:none;font:600 11px/1 var(--mono);padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer}
+.copy:hover{color:var(--text);border-color:rgba(255,255,255,.35)}
+.copy.ok{color:var(--lime);border-color:rgba(141,250,143,.5)}
+
+.verify{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(141,250,143,.07);border:1px dashed rgba(141,250,143,.35);color:#cfffd4;font-size:13.5px}
+.verify::before{content:"✓";flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(141,250,143,.2);color:var(--lime);font:700 12px/1 var(--mono)}
+.warn{display:flex;gap:10px;padding:12px 14px;border-radius:12px;background:rgba(255,171,76,.08);border:1px solid rgba(255,171,76,.3);color:#ffe2bd;font-size:13.5px}
+.warn::before{content:"!";flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(255,171,76,.22);color:var(--amber);font:700 13px/1 var(--mono)}
+
+/* token anatomy */
+.anatomy{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tok{padding:12px;border-radius:12px;border:1px solid var(--line-soft);background:rgba(0,0,0,.28);display:flex;flex-direction:column;gap:6px;min-width:0}
+.tok .fl{font:600 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.tok.good .fl{color:var(--lime)} .tok.bad .fl{color:#ff9d8a}
+.tok .fv{font:500 12.5px/1.45 var(--mono);overflow-wrap:anywhere;color:var(--muted)}
+.tok .fv em{font-style:normal;color:var(--text);background:rgba(141,250,143,.18);padding:0 3px;border-radius:4px}
+.tok small{color:var(--faint);font-size:12px}
+
+/* ---------- map table ---------- */
+.two>*,.main>*,.hero>*{min-width:0}
+.two{display:grid;grid-template-columns:1.15fr 1fr;gap:28px;align-items:start}
+.panel{padding:clamp(20px,3vw,30px)}
+.tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line-soft)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+th{font:600 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.04)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:700;color:var(--text)}
+td{color:var(--muted)}
+.pill{display:inline-block;font:600 11px/1 var(--mono);padding:5px 8px;border-radius:6px;background:color-mix(in srgb, var(--c) 18%, transparent);color:var(--c);border:1px solid color-mix(in srgb, var(--c) 40%, transparent);white-space:nowrap}
+
+.faq{display:flex;flex-direction:column;gap:10px}
+details{border:1px solid var(--line-soft);border-radius:14px;background:rgba(8,10,30,.3);overflow:hidden}
+details[open]{border-color:var(--line)}
+summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;font-weight:600;font-size:14.5px}
+summary::-webkit-details-marker{display:none}
+summary .sym{flex:none;font:600 11px/1 var(--mono);padding:5px 7px;border-radius:6px;background:rgba(255,90,60,.18);color:#ffb3a3;border:1px solid rgba(255,90,60,.35);margin-top:1px}
+summary::after{content:"+";margin-left:auto;font:500 18px/1 var(--mono);color:var(--faint);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details .ans{padding:0 16px 16px 16px;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:8px}
+details .ans p{margin:0}
+.err{font:500 12px/1.5 var(--mono);color:#ffb3a3;background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;overflow-wrap:anywhere}
+
+/* routine */
+.routine{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
+.routine .r{font:600 12.5px/1 var(--mono);padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06)}
+.routine .arr{color:var(--faint);font-family:var(--mono)}
+
+footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--faint);font-size:13px;padding:6px 4px}
+footer b{color:var(--muted);font-weight:600}
+
+/* ---------- responsive ---------- */
+@media (max-width: 960px){
+  .hero{grid-template-columns:1fr}
+  .main{grid-template-columns:1fr}
+  .nav{position:static;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .nav .title{grid-column:1/-1}
+  .two{grid-template-columns:1fr}
+}
+@media (max-width: 760px){
+  .nodes{grid-template-columns:1fr}
+  .link{flex-direction:row;padding:10px 0;min-width:0;justify-content:flex-start;gap:12px;padding-left:22px}
+  .link .wire{width:2px;height:34px;background:linear-gradient(180deg,var(--a),var(--b))}
+  .link .wire::after{left:-2px;top:-30%;width:6px;height:30%;animation:pulseV 2.6s linear infinite}
+  @keyframes pulseV{to{top:110%}}
+  .link span{white-space:normal;text-align:left}
+  .anatomy{grid-template-columns:1fr}
+}
+@media (max-width: 460px){
+  .orb{opacity:.42!important;transform:scale(.6)}
+  .orb.o2{right:-260px}
+  .orb.o3{left:-40%}
+  .phase-head{flex-direction:column;gap:12px}
+  .step{padding:14px 12px;gap:12px}
+  .ring .pct{font-size:40px}
+}
+</style>
+</head>
+<body>
+
+<div class="sky" aria-hidden="true">
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="orb o4"></div>
+  <div class="grid-lines"></div>
+</div>
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="glass hero">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Checklist de configuração</div>
+      <h1>Integrando <span class="grad">dbt Cloud, Databricks e GitHub</span> do zero</h1>
+      <p class="lede">O passo a passo completo para ligar as três ferramentas: criar as contas, gerar as credenciais, conectar tudo e provar que funciona. Marque cada etapa conforme avança; o progresso fica salvo neste navegador.</p>
+      <div class="meta">
+        <span class="chip">6 fases</span>
+        <span class="chip" id="stepCount">— passos</span>
+        <span class="chip">Databricks Free Edition</span>
+        <span class="chip">dbt Cloud · plano Developer</span>
+      </div>
+    </div>
+    <div class="ring-card">
+      <div class="ring" role="img" aria-label="Progresso geral">
+        <svg viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#ffab4c"/>
+              <stop offset="45%" stop-color="#ff5a3c"/>
+              <stop offset="100%" stop-color="#9b7bff"/>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="60" cy="60" r="50"/>
+          <circle class="bar" id="ringBar" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+        </svg>
+        <div class="center"><div><div class="pct" id="pct">0%</div><div class="lbl" id="pctLbl">0 de 0 concluídos</div></div></div>
+      </div>
+      <div class="ring-actions">
+        <button class="btn" id="nextBtn" type="button">Ir para o próximo passo</button>
+        <button class="btn danger" id="resetBtn" type="button">Zerar progresso</button>
+      </div>
+      <div class="hint" id="resetHint" hidden>Clique de novo em até 4 s para confirmar.</div>
+    </div>
+  </section>
+
+  <!-- FLOW -->
+  <section class="glass flow" aria-labelledby="flowTitle">
+    <div class="sec-head">
+      <h2 id="flowTitle">Como as três peças conversam</h2>
+      <p>O dbt fica no meio: lê o código no GitHub e executa o SQL no Databricks.</p>
+    </div>
+    <div class="nodes">
+      <div class="node" style="--c:var(--violet)">
+        <span class="tag">Código</span>
+        <h3>GitHub</h3>
+        <p>Guarda os arquivos <code>.sql</code> e <code>.yml</code> do projeto e todo o histórico de versões.</p>
+      </div>
+      <div class="link" style="--a:var(--violet);--b:var(--amber)">
+        <div class="wire"></div>
+        <span>app do dbt no GitHub<br>(git: pull · commit · PR)</span>
+      </div>
+      <div class="node" style="--c:var(--amber)">
+        <span class="tag">Orquestração</span>
+        <h3>dbt Cloud</h3>
+        <p>Onde você escreve, compila, testa e agenda os modelos. Transforma <code>ref()</code> em SQL real.</p>
+      </div>
+      <div class="link" style="--a:var(--amber);--b:var(--coral)">
+        <div class="wire"></div>
+        <span>SQL Warehouse<br>(hostname · HTTP path · token)</span>
+      </div>
+      <div class="node" style="--c:var(--coral)">
+        <span class="tag">Dados e execução</span>
+        <h3>Databricks</h3>
+        <p>Onde os dados moram e onde as consultas rodam. As tabelas criadas pelo dbt aparecem no Catalog.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHECKLIST -->
+  <div class="main">
+    <nav class="glass nav" aria-label="Fases" id="nav">
+      <div class="title">Fases</div>
+    </nav>
+    <div class="phases" id="phases"></div>
+  </div>
+
+  <!-- MAP + TROUBLESHOOTING -->
+  <div class="two">
+    <section class="glass panel" aria-labelledby="mapTitle">
+      <div class="sec-head"><h2 id="mapTitle">O que vai para onde</h2></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Informação</th><th>Onde pegar</th><th>Onde colar</th></tr></thead>
+          <tbody>
+            <tr><td>Server hostname</td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>SQL Warehouses → Connection details</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Conexão</td></tr>
+            <tr><td>HTTP path</td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>SQL Warehouses → Connection details</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Conexão</td></tr>
+            <tr><td>Catalog</td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>Menu Catalog (<code>workspace</code>)</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Conexão</td></tr>
+            <tr><td>Token <code>dapi…</code></td><td><span class="pill" style="--c:var(--coral)">Databricks</span><br>Settings → Developer → Access tokens</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Credenciais de desenvolvimento</td></tr>
+            <tr><td>Schema</td><td>Você escolhe<br><code>dbt_seunome</code></td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Credenciais de desenvolvimento</td></tr>
+            <tr><td>Repositório</td><td><span class="pill" style="--c:var(--violet)">GitHub</span><br>New repository</td><td><span class="pill" style="--c:var(--amber)">dbt Cloud</span><br>Etapa Repository</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h2 style="margin-top:26px;font-size:20px">Rotina depois de integrado</h2>
+      <div class="routine" aria-label="Rotina de trabalho">
+        <span class="r">criar branch</span><span class="arr">→</span>
+        <span class="r">editar modelo</span><span class="arr">→</span>
+        <span class="r">dbt build</span><span class="arr">→</span>
+        <span class="r">conferir no Catalog</span><span class="arr">→</span>
+        <span class="r">commit</span><span class="arr">→</span>
+        <span class="r">pull request</span><span class="arr">→</span>
+        <span class="r">merge na main</span>
+      </div>
+    </section>
+
+    <section class="glass panel" aria-labelledby="faqTitle">
+      <div class="sec-head"><h2 id="faqTitle">Quando algo dá errado</h2></div>
+      <div class="faq">
+        <details open>
+          <summary><span class="sym">401</span>Test connection falha com “Unauthorized”</summary>
+          <div class="ans">
+            <div class="err">Credential was not sent or was of an unsupported type for this API … HTTP 401 Unauthorized</div>
+            <p>O dbt chegou ao warehouse, mas o token foi recusado. Quase sempre é um destes: campo Token vazio, token copiado pela metade, ou o <b>Token ID</b> colado no lugar do token.</p>
+            <p>Solução: gere um novo token no Databricks, copie o valor que começa com <code>dapi</code> e cole de novo em Credenciais.</p>
+          </div>
+        </details>
+        <details>
+          <summary><span class="sym">401</span>Funcionava e parou depois de algumas semanas</summary>
+          <div class="ans"><p>O token expirou (ele tem a validade escolhida na criação). Gere outro e troque apenas o campo Token nas credenciais. O restante continua igual.</p></div>
+        </details>
+        <details>
+          <summary><span class="sym">git</span>A opção GitHub não aparece na etapa Repository</summary>
+          <div class="ans"><p>A conta do dbt ainda não está ligada ao GitHub. Vá em <span class="path">Account settings → <b>Integrations</b> → GitHub → Link</span>, autorize e volte ao projeto.</p></div>
+        </details>
+        <details>
+          <summary><span class="sym">git</span>O repositório não aparece na lista</summary>
+          <div class="ans"><p>O app do dbt foi instalado com acesso só a alguns repositórios. No GitHub, abra <span class="path">Settings → Applications → <b>dbt Cloud</b> → Configure</span> e inclua o repositório.</p></div>
+        </details>
+        <details>
+          <summary><span class="sym">schema</span>As tabelas saem com o nome de outra pessoa</summary>
+          <div class="ans"><p>O schema foi copiado de um tutorial (ex.: <code>dbt_lmiranda</code>). Troque para o seu em Credenciais de desenvolvimento e rode de novo.</p></div>
+        </details>
+        <details>
+          <summary><span class="sym">catalog</span>Erro de catálogo ou tabela não encontrada</summary>
+          <div class="ans"><p>Com Unity Catalog, informe o <b>catalog</b> na conexão. No Free Edition o padrão é <code>workspace</code>; confira o nome exato no menu Catalog.</p></div>
+        </details>
+        <details>
+          <summary><span class="sym">lento</span>A primeira execução demora</summary>
+          <div class="ans"><p>O SQL Warehouse desliga sozinho quando fica ocioso. A primeira consulta espera ele ligar; as seguintes são rápidas.</p></div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span>Guia de referência · <b>Leonardo Guchert</b> · github.com/guchert</span>
+    <span>Nunca publique o valor do seu token <code>dapi…</code>.</span>
+  </footer>
+</main>
+
+<script>
+(function(){
+  const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+  const f = (label, value, copyable=true) =>
+    `<div class="field"><div style="min-width:0"><div class="fl">${label}</div><div class="fv">${value}</div></div>${copyable?`<button class="copy" type="button" data-copy="${value.replace(/<[^>]+>/g,'')}">copiar</button>`:''}</div>`;
+
+  const PHASES = [
+    { id:'github', k:'Fase 1 · GitHub', name:'GitHub', color:'var(--violet)',
+      intro:'O repositório é onde o código do projeto dbt vai morar. Ele precisa existir antes de configurar o dbt.',
+      steps:[
+        { t:'Criar a conta no GitHub', b:`<p>Acesse <span class="path">github.com → <b>Sign up</b></span>. Se já tiver conta, apenas faça login.</p>` },
+        { t:'Criar um repositório vazio', b:`<p><span class="path">+ → <b>New repository</b></span>. Escolha um nome, público ou privado, e deixe <b>desmarcados</b> README, .gitignore e licença. O dbt preenche a estrutura depois.</p>
+          <div class="fields">${f('Nome sugerido','dbt-banvic')}</div>` }
+      ]},
+    { id:'databricks', k:'Fase 2 · Databricks', name:'Databricks', color:'var(--coral)',
+      intro:'Aqui você cria o ambiente onde os dados ficam e junta as quatro informações que o dbt vai pedir.',
+      steps:[
+        { t:'Criar a conta e entrar no workspace', b:`<p>Para estudo, use o <b>Databricks Free Edition</b> (databricks.com → Free Edition). Depois do cadastro, faça login no workspace.</p>` },
+        { t:'Confirmar o SQL Warehouse', b:`<p>Menu <span class="path"><b>SQL Warehouses</b></span>. O Free Edition já traz o <i>Serverless Starter Warehouse</i>. É ele que executa as consultas enviadas pelo dbt.</p>` },
+        { t:'Copiar os dados de conexão', b:`<p>Clique no warehouse → aba <span class="path"><b>Connection details</b></span> e anote dois valores:</p>
+          <div class="fields">${f('Server hostname','dbc-xxxxxxxx-xxxx.cloud.databricks.com',false)}${f('HTTP path','/sql/1.0/warehouses/xxxxxxxxxxxxxxxx',false)}</div>` },
+        { t:'Conferir o nome do catálogo', b:`<p>Menu <span class="path"><b>Catalog</b></span>. No Free Edition o catálogo padrão se chama:</p><div class="fields">${f('Catalog','workspace')}</div>` },
+        { t:'Gerar o token de acesso', b:`<p><span class="path">Avatar → Settings → <b>Developer</b> → Access tokens → Manage → <b>Generate new token</b></span>. Dê um nome (ex.: <code>dbt-cloud</code>) e uma validade (ex.: 90 dias).</p>
+          <div class="anatomy">
+            <div class="tok good"><span class="fl">✓ Token · é este</span><span class="fv"><em>dapi</em>a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6</span><small>Começa com dapi. Aparece uma única vez.</small></div>
+            <div class="tok bad"><span class="fl">✕ Token ID · não serve</span><span class="fv">7e1c09ab4f2d…9a03be51c7d8…e4f10</span><small>64 caracteres, só identifica o token na lista.</small></div>
+          </div>
+          <div class="warn">Copie o valor antes de fechar a janela. Se perder, gere outro; não há como recuperar.</div>` }
+      ]},
+    { id:'dbt', k:'Fase 3 · dbt Cloud', name:'dbt Cloud', color:'var(--amber)',
+      intro:'Com as informações do Databricks em mãos, crie o projeto no dbt e aponte para o warehouse.',
+      steps:[
+        { t:'Criar a conta no dbt Cloud', b:`<p>Acesse <span class="path">getdbt.com → <b>Sign up</b></span>. O plano <b>Developer</b> é gratuito para 1 usuário.</p>` },
+        { t:'Criar um projeto', b:`<p>Dê um nome ao projeto e siga o assistente de configuração. Ele pede conexão, credenciais e repositório, nessa ordem.</p>` },
+        { t:'Configurar a conexão com o Databricks', b:`<p>Escolha <b>Databricks</b> e preencha com o que você anotou na fase 2:</p>
+          <div class="fields">${f('Server hostname','do passo 2.3',false)}${f('HTTP path','do passo 2.3',false)}${f('Catalog','workspace')}</div>` },
+        { t:'Preencher as credenciais de desenvolvimento', b:`<div class="fields">${f('Auth method','Token',false)}${f('Token','dapi…',false)}${f('Schema','dbt_seunome',false)}${f('Threads','4')}</div>
+          <p>O schema é onde as suas tabelas de teste serão criadas. Use um nome seu, como <code>dbt_lguchert</code>.</p>` },
+        { t:'Testar a conexão', b:`<p>Clique em <b>Test connection</b>.</p><div class="verify">Mensagem de sucesso: dbt e Databricks estão conversando.</div>` }
+      ]},
+    { id:'git', k:'Fase 4 · dbt ↔ GitHub', name:'Ligar dbt e GitHub', color:'var(--teal)',
+      intro:'O dbt precisa de permissão para ler e escrever no seu repositório. Isso é feito por um app instalado no GitHub.',
+      steps:[
+        { t:'Escolher GitHub na etapa Repository', b:`<p>No assistente do projeto, em <b>Setup repository</b>, selecione <b>GitHub</b>.</p>` },
+        { t:'Instalar o app do dbt Cloud no GitHub', b:`<p>Você será levado ao GitHub. Autorize e instale o app na sua conta, dando acesso a <b>todos</b> os repositórios ou só ao criado na fase 1.</p>` },
+        { t:'Selecionar o repositório', b:`<p>De volta ao dbt Cloud, escolha o repositório na lista.</p><div class="warn">Se GitHub não aparecer: <span class="path">Account settings → <b>Integrations</b> → GitHub → Link</span>, depois volte ao projeto.</div>` }
+      ]},
+    { id:'check', k:'Fase 5 · Validação', name:'Validar', color:'var(--lime)',
+      intro:'Três testes rápidos provam que cada ligação funciona. Se os três passarem, a integração está completa.',
+      steps:[
+        { t:'Inicializar o projeto e enviar ao GitHub', b:`<p>Abra o <b>Studio IDE</b> (menu Develop) → <b>Initialize dbt project</b> → <b>Commit and sync</b>.</p><div class="verify">No GitHub, os arquivos <code>dbt_project.yml</code> e <code>models/</code> aparecem no repositório.</div>` },
+        { t:'Rodar o dbt debug', b:`<div class="fields">${f('Comando','dbt debug')}</div><div class="verify">A saída termina com “All checks passed”.</div>` },
+        { t:'Rodar o dbt run', b:`<div class="fields">${f('Comando','dbt run')}</div><p>O projeto inicial vem com modelos de exemplo.</p><div class="verify">No Databricks, em <span class="path">Catalog → workspace → <b>dbt_seunome</b></span>, as tabelas de exemplo aparecem.</div>` }
+      ]},
+    { id:'prod', k:'Fase 6 · Produção', name:'Produção', color:'var(--sky)', optional:true,
+      intro:'Separa o ambiente oficial do seu ambiente de testes. Faça quando o projeto estiver maduro.',
+      steps:[
+        { t:'Criar o ambiente de produção', b:`<p><span class="path">Deploy → <b>Environments</b> → Create</span>, tipo <b>Production</b>, com schema e token próprios.</p><div class="fields">${f('Schema sugerido','analytics')}</div>` },
+        { t:'Criar um job', b:`<p><span class="path">Deploy → <b>Jobs</b> → Create job</span> apontando para a branch <code>main</code>, rodando o comando abaixo manualmente ou com agendamento.</p><div class="fields">${f('Comando','dbt build')}</div>` }
+      ]}
+  ];
+
+  const KEY = 'dbt-integration-progress-v1';
+  let state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ state = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} };
+
+  const phasesEl = document.getElementById('phases');
+  const navEl = document.getElementById('nav');
+  let total = 0;
+
+  PHASES.forEach((p, pi) => {
+    const sec = document.createElement('section');
+    sec.className = 'glass phase';
+    sec.id = p.id;
+    sec.style.setProperty('--c', p.color);
+    const items = p.steps.map((s, si) => {
+      total++;
+      const id = `${p.id}-${si}`;
+      const num = `${pi+1}.${si+1}`;
+      return `<li class="step" data-id="${id}">
+        <label class="check"><input type="checkbox" id="cb-${id}" aria-label="Concluído: ${s.t}"><span class="box"><b>${num}</b>${CHECK}</span></label>
+        <div><h4>${s.t}</h4><div class="body">${s.b}</div></div>
+      </li>`;
+    }).join('');
+    sec.innerHTML = `
+      <div class="phase-head">
+        <div class="phase-num">${pi+1}</div>
+        <div><div class="k">${p.k}</div><h2>${p.name}${p.optional?'<span class="opt">opcional</span>':''}</h2><p>${p.intro}</p></div>
+      </div>
+      <div class="pbar"><i></i></div>
+      <ol class="steps">${items}</ol>`;
+    phasesEl.appendChild(sec);
+
+    const a = document.createElement('a');
+    a.className = 'navlink'; a.href = '#'+p.id; a.dataset.phase = p.id;
+    a.style.setProperty('--c', p.color);
+    a.innerHTML = `<span class="n">${pi+1}</span><span class="t">${p.name}</span><span class="c">0/${p.steps.length}</span>`;
+    navEl.appendChild(a);
+  });
+
+  document.getElementById('stepCount').textContent = total + ' passos';
+
+  const C = 2*Math.PI*50;
+  function render(){
+    let done = 0;
+    PHASES.forEach(p => {
+      let pd = 0;
+      p.steps.forEach((s, si) => {
+        const id = `${p.id}-${si}`;
+        const on = !!state[id];
+        const li = phasesEl.querySelector(`[data-id="${id}"]`);
+        li.classList.toggle('is-done', on);
+        li.querySelector('input').checked = on;
+        if (on) { pd++; done++; }
+      });
+      document.querySelector(`#${p.id} .pbar i`).style.width = (pd/p.steps.length*100)+'%';
+      const nl = navEl.querySelector(`[data-phase="${p.id}"]`);
+      nl.querySelector('.c').textContent = pd===p.steps.length ? '✓' : `${pd}/${p.steps.length}`;
+      nl.classList.toggle('done', pd===p.steps.length);
+    });
+    const pct = Math.round(done/total*100);
+    document.getElementById('pct').textContent = pct+'%';
+    document.getElementById('pctLbl').textContent = `${done} de ${total} concluídos`;
+    const rb=document.getElementById('ringBar'); rb.style.strokeDashoffset = C*(1-done/total); rb.style.opacity = done ? 1 : 0;
+    document.getElementById('nextBtn').textContent = done===total ? 'Tudo integrado ✓' : 'Ir para o próximo passo';
+  }
+
+  phasesEl.addEventListener('change', e => {
+    if (e.target.matches('input[type=checkbox]')) {
+      const id = e.target.closest('.step').dataset.id;
+      if (e.target.checked) state[id] = true; else delete state[id];
+      save(); render();
+    }
+  });
+
+  phasesEl.addEventListener('click', e => {
+    const b = e.target.closest('.copy'); if (!b) return;
+    const txt = b.dataset.copy;
+    const ok = () => { b.textContent = 'copiado'; b.classList.add('ok'); setTimeout(()=>{ b.textContent='copiar'; b.classList.remove('ok'); }, 1400); };
+    const fallback = () => {
+      const fv = b.parentElement.querySelector('.fv');
+      const r = document.createRange(); r.selectNodeContents(fv);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      b.textContent = 'selecionado';
+      setTimeout(()=>{ b.textContent='copiar'; }, 1400);
+    };
+    try { navigator.clipboard.writeText(txt).then(ok, fallback); } catch(err){ fallback(); }
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    const next = [...phasesEl.querySelectorAll('.step')].find(li => !state[li.dataset.id]);
+    if (!next) return;
+    next.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'center'});
+    next.animate?.([{boxShadow:'0 0 0 0 rgba(255,171,76,.0)'},{boxShadow:'0 0 0 4px rgba(255,171,76,.55)'},{boxShadow:'0 0 0 0 rgba(255,171,76,.0)'}],{duration:1400,delay:300});
+  });
+
+  const resetBtn = document.getElementById('resetBtn'), hint = document.getElementById('resetHint');
+  let armed = null;
+  resetBtn.addEventListener('click', () => {
+    if (armed) { clearTimeout(armed); armed = null; hint.hidden = true; resetBtn.textContent = 'Zerar progresso'; state = {}; save(); render(); return; }
+    hint.hidden = false; resetBtn.textContent = 'Confirmar';
+    armed = setTimeout(() => { armed = null; hint.hidden = true; resetBtn.textContent = 'Zerar progresso'; }, 4000);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Sistema operacional
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Arquivos temporários e rascunhos
+*.tmp
+*.bak
+*.log
+rascunhos/
+
+# Credenciais (nunca versionar tokens do Databricks)
+.env
+*.env
+profiles.yml
