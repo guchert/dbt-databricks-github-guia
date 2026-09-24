@@ -32,7 +32,7 @@ Na maioria das vezes, é o **Token ID** (64 caracteres) colado no lugar do **tok
 ## Como usar
 
 - **Online:** abra o link acima.
-- **Offline:** baixe o `index.html` e abra no navegador. Funciona sem internet (só as fontes web não carregam).
+- **Offline:** baixe o `dbt-databricks-guithub-guia.html` e abra no navegador. Funciona sem internet (só as fontes web não carregam).
 
 ## Tecnologias
 
